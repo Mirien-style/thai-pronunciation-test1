@@ -15,6 +15,8 @@
   .add-box { background: #fff; border: 2px dashed #ffb066; border-radius: 16px; padding: 20px; margin-top: 30px; text-align: center; }
   input { font-size: 18px; padding: 10px; margin: 5px; border-radius: 10px; border: 1px solid #ddd; width: 80%; max-width: 300px; }
   #status { text-align: center; color: #888; font-size: 14px; margin-top: 10px; }
+  .voice-box { text-align: center; margin-top: 12px; background: white; padding: 14px; border-radius: 14px; }
+  #voiceSelect { font-size: 16px; padding: 8px; border-radius: 10px; border: 1px solid #ddd; width: 90%; max-width: 400px; }
 </style>
 </head>
 <body>
@@ -26,6 +28,16 @@
   <button id="enableBtn" onclick="enableVoice()">✅ 點我啟用語音</button>
 </div>
 <p id="status">請先點上面綠色按鈕啟用語音</p>
+
+<div class="voice-box">
+  <div style="margin-bottom:8px;">🎙️ 選擇泰文聲音：</div>
+  <select id="voiceSelect"></select>
+  <div style="margin-top:8px;">
+    <button onclick="refreshVoices()" style="font-size:14px; padding:6px 14px; background:#666;">重新整理聲音</button>
+    <button onclick="testVoice()" style="font-size:14px; padding:6px 14px; background:#3b82f6;">試聽這個聲音</button>
+  </div>
+  <div style="font-size:13px; color:#888; margin-top:8px;">如果清單是空的，請點「重新整理聲音」，Chrome 需要一點時間載入聲音</div>
+</div>
 
 <div id="list"></div>
 
@@ -49,9 +61,58 @@ var words = [
 ];
 
 var voiceReady = false;
+var selectedVoiceName = "";
+
+// 這個函式只負責填選單，失敗也不會影響單字
+function refreshVoices() {
+  try {
+    var selector = document.getElementById('voiceSelect');
+    if (!selector) return;
+    var all = window.speechSynthesis.getVoices();
+    var thaiVoices = [];
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].lang && all[i].lang.toLowerCase().indexOf('th') === 0) {
+        thaiVoices.push(all[i]);
+      }
+    }
+    if (thaiVoices.length === 0) {
+      selector.innerHTML = '<option value="">正在載入泰文聲音...請再點一次「重新整理聲音」</option>';
+      return;
+    }
+    var oldValue = selector.value || selectedVoiceName;
+    selector.innerHTML = '';
+    for (var j = 0; j < thaiVoices.length; j++) {
+      var opt = document.createElement('option');
+      opt.value = thaiVoices[j].name;
+      opt.text = thaiVoices[j].name + ' (' + thaiVoices[j].lang + ')';
+      selector.appendChild(opt);
+    }
+    // 自動優先選 Premwadee / Niwat
+    var best = "";
+    for (var k = 0; k < thaiVoices.length; k++) {
+      if (thaiVoices[k].name.toLowerCase().indexOf('premwadee') !== -1) { best = thaiVoices[k].name; break; }
+    }
+    if (!best) {
+      for (var m = 0; m < thaiVoices.length; m++) {
+        if (thaiVoices[m].name.toLowerCase().indexOf('niwat') !== -1) { best = thaiVoices[m].name; break; }
+      }
+    }
+    if (!best && thaiVoices.length > 0) best = thaiVoices[0].name;
+    if (oldValue) {
+      for (var n = 0; n < thaiVoices.length; n++) {
+        if (thaiVoices[n].name === oldValue) { best = oldValue; break; }
+      }
+    }
+    selector.value = best;
+    selectedVoiceName = best;
+  } catch (e) {
+    console.log(e);
+  }
+}
 
 function enableVoice() {
   document.getElementById('status').innerText = "正在啟用語音...";
+  refreshVoices();
   window.speechSynthesis.cancel();
   var test = new SpeechSynthesisUtterance("สวัสดี");
   test.lang = 'th-TH';
@@ -59,6 +120,7 @@ function enableVoice() {
   test.volume = 0.01;
   test.onend = function() {
     voiceReady = true;
+    refreshVoices();
     document.getElementById('status').innerText = "✅ 語音已就緒！現在按下面的 🔊 就有聲音了";
     document.getElementById('enableBtn').innerText = "✅ 語音已啟用";
   };
@@ -66,42 +128,43 @@ function enableVoice() {
   setTimeout(function() {
     if (!voiceReady) {
       voiceReady = true;
+      refreshVoices();
       document.getElementById('status').innerText = "✅ 語音已就緒！現在按下面的 🔊 試試看";
       document.getElementById('enableBtn').innerText = "✅ 語音已啟用";
     }
   }, 1000);
 }
 
+function testVoice() {
+  if (!voiceReady) { alert("請先點上面綠色的「點我啟用語音」按鈕"); return; }
+  speak("สวัสดีครับ ขอบคุณครับ");
+}
+
 function speak(thaiText) {
-  if (!voiceReady) {
-    alert("請先點上面綠色的「點我啟用語音」按鈕");
-    return;
-  }
+  if (!voiceReady) { alert("請先點上面綠色的「點我啟用語音」按鈕"); return; }
   window.speechSynthesis.cancel();
   var u = new SpeechSynthesisUtterance(thaiText);
   u.lang = 'th-TH';
   u.rate = 1.0;
   u.pitch = 1;
   u.volume = 1;
-  // 自動挑最準的聲音，不用下拉選單，就不會卡住
+  var selector = document.getElementById('voiceSelect');
+  var wantName = selector ? selector.value : selectedVoiceName;
   var voices = window.speechSynthesis.getVoices();
-  var thaiVoice = null;
-  for (var i = 0; i < voices.length; i++) {
-    if (voices[i].name.toLowerCase().indexOf('premwadee') !== -1) { thaiVoice = voices[i]; break; }
+  var chosen = null;
+  if (wantName) {
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].name === wantName) { chosen = voices[i]; break; }
+    }
   }
-  if (!thaiVoice) {
+  if (!chosen) {
     for (var j = 0; j < voices.length; j++) {
-      if (voices[j].name.toLowerCase().indexOf('niwat') !== -1) { thaiVoice = voices[j]; break; }
+      if (voices[j].lang && voices[j].lang.toLowerCase().indexOf('th') === 0) { chosen = voices[j]; break; }
     }
   }
-  if (!thaiVoice) {
-    for (var k = 0; k < voices.length; k++) {
-      if (voices[k].lang && voices[k].lang.toLowerCase().indexOf('th') === 0) { thaiVoice = voices[k]; break; }
-    }
-  }
-  if (thaiVoice) u.voice = thaiVoice;
+  if (chosen) u.voice = chosen;
   window.speechSynthesis.speak(u);
-  document.getElementById('status').innerText = "正在播放：" + thaiText;
+  document.getElementById('status').innerText = "正在播放：" + thaiText + "（聲音：" + (chosen ? chosen.name : "預設") + "）";
 }
 
 function render() {
@@ -129,6 +192,12 @@ function addWord() {
 }
 
 render();
+refreshVoices();
+// Chrome 的聲音要等一下才會出來，所以多試幾次
+window.speechSynthesis.onvoiceschanged = refreshVoices;
+setTimeout(refreshVoices, 500);
+setTimeout(refreshVoices, 1500);
+setTimeout(refreshVoices, 3000);
 </script>
 </body>
 </html>
