@@ -48,16 +48,12 @@ const words = [
 function speak(thaiText) {
   window.speechSynthesis.cancel();
 
-  // 改用這個 Google 發音網址，Chrome 比較不會擋
-  const url = `https://translate.googleapis.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(thaiText)}&tl=th&client=gtx`;
+  // 用 Streamelements 的語音服務，它就是用 Google 的泰文聲音，但不會被 Chrome 擋
+  const url = `https://api.streamelements.com/kappa/v2/speech?voice=th-TH-Standard-A&text=${encodeURIComponent(thaiText)}`;
   const audio = new Audio(url);
+  audio.volume = 1.0;
   audio.play().catch(e => {
-    console.log("Google發音失敗，改用系統發音", e);
-    // 如果 Google 也失敗，才用系統的念
-    const u = new SpeechSynthesisUtterance(thaiText);
-    u.lang = 'th-TH';
-    u.rate = 0.85;
-    window.speechSynthesis.speak(u);
+    alert("播放失敗：" + e);
   });
 }
 
