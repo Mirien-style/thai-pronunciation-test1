@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>泰文發音學習</title>
-
 <style>
   body { font-family: sans-serif; background: #fff7ed; padding: 20px; max-width: 800px; margin: auto; }
   h1 { text-align: center; }
@@ -27,7 +26,7 @@
 <div style="text-align:center;">
   <button id="enableBtn" onclick="enableVoice()">✅ 點我啟用語音</button>
 </div>
-<p id="status">正在載入語音服務...</p>
+<p id="status">請先點上面綠色按鈕啟用語音</p>
 
 <div id="list"></div>
 
@@ -50,23 +49,19 @@ const words = [
 
 let voiceReady = false;
 
-let voiceReady = false;
-
 function enableVoice() {
-  // Chrome 內建的語音，不用等外部伺服器，點了馬上就好
+  document.getElementById('status').innerText = "正在啟用語音...";
+  window.speechSynthesis.cancel();
   const test = new SpeechSynthesisUtterance("สวัสดี");
   test.lang = 'th-TH';
-  test.volume = 0.01; // 預熱用，幾乎聽不到
-  test.onend = () => {
+  test.volume = 0.01;
+  test.onend = function() {
     voiceReady = true;
     document.getElementById('status').innerText = "✅ 語音已就緒！現在按下面的 🔊 就有聲音了";
     document.getElementById('enableBtn').innerText = "✅ 語音已啟用";
   };
-  window.speechSynthesis.cancel();
   window.speechSynthesis.speak(test);
-
-  // 保底 1 秒後直接當作已就緒，不讓你卡住
-  setTimeout(() => {
+  setTimeout(function() {
     if (!voiceReady) {
       voiceReady = true;
       document.getElementById('status').innerText = "✅ 語音已就緒！現在按下面的 🔊 試試看";
@@ -85,32 +80,20 @@ function speak(thaiText) {
   u.lang = 'th-TH';
   u.rate = 0.85;
   u.volume = 1;
-
-  // 盡量找泰文的聲音
   const voices = window.speechSynthesis.getVoices();
-  const thaiVoice = voices.find(v => v.lang.startsWith('th'));
+  const thaiVoice = voices.find(function(v) { return v.lang.indexOf('th') === 0; });
   if (thaiVoice) u.voice = thaiVoice;
-
   window.speechSynthesis.speak(u);
   document.getElementById('status').innerText = "正在播放：" + thaiText;
 }
 
-// 讓瀏覽器先把聲音清單載進來
-window.speechSynthesis.onvoiceschanged = () => {
-  window.speechSynthesis.getVoices();
-};
-
 function render() {
   const list = document.getElementById('list');
   list.innerHTML = '';
-  words.forEach(w => {
+  words.forEach(function(w) {
     const div = document.createElement('div');
     div.className = 'card';
-    div.innerHTML = `
-      <div class="thai">${w.thai}</div>
-      <div class="trans">中文：${w.zh} | English：${w.en}</div>
-      <button onclick="speak('${w.thai}')">🔊 播放發音</button>
-    `;
+    div.innerHTML = '<div class="thai">' + w.thai + '</div><div class="trans">中文：' + w.zh + ' | English：' + w.en + '</div><button onclick="speak(\'' + w.thai + '\')">🔊 播放發音</button>';
     list.appendChild(div);
   });
 }
@@ -120,7 +103,7 @@ function addWord() {
   const zh = document.getElementById('newZh').value.trim();
   const en = document.getElementById('newEn').value.trim();
   if (!thai) { alert('請先輸入泰文'); return; }
-  words.push({ thai, zh: zh || '-', en: en || '-' });
+  words.push({ thai: thai, zh: zh || '-', en: en || '-' });
   render();
   document.getElementById('newThai').value = '';
   document.getElementById('newZh').value = '';
