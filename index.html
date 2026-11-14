@@ -3,24 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>泰文基礎發音學習</title>
+<title>泰文發音學習</title>
+<!-- 關鍵：載入 ResponsiveVoice 的泰文語音 -->
+<script src="https://code.responsivevoice.org/responsivevoice.js?key=free"></script>
 <style>
   body { font-family: sans-serif; background: #fff7ed; padding: 20px; max-width: 800px; margin: auto; }
   h1 { text-align: center; }
   .card { background: white; border-radius: 16px; padding: 20px; margin: 16px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.08); text-align: center; }
-  .thai { font-size: 42px; font-weight: bold; color: #1a1a1a; }
+  .thai { font-size: 42px; font-weight: bold; }
   .trans { font-size: 18px; color: #555; margin-top: 8px; }
-  .trans span { display: inline-block; margin: 0 8px; }
   button { margin-top: 14px; font-size: 18px; padding: 10px 22px; border: none; border-radius: 999px; background: #ff8a00; color: white; cursor: pointer; }
   button:hover { background: #e67a00; }
   .add-box { background: #fff; border: 2px dashed #ffb066; border-radius: 16px; padding: 20px; margin-top: 30px; text-align: center; }
   input { font-size: 18px; padding: 10px; margin: 5px; border-radius: 10px; border: 1px solid #ddd; width: 80%; max-width: 300px; }
+  #status { text-align: center; color: #888; font-size: 14px; margin-top: 10px; }
 </style>
 </head>
 <body>
 
 <h1>🇹🇭 泰文發音學習</h1>
-<p style="text-align:center;">點 🔊 就會用 Google 翻譯的泰文語音念出來</p>
+<p style="text-align:center;">點 🔊 就會念泰文</p>
+<p id="status">正在載入語音服務...</p>
 
 <div id="list"></div>
 
@@ -39,16 +42,18 @@ const words = [
   { thai: "ขอบคุณ", zh: "謝謝", en: "Thank you" },
   { thai: "ใช่", zh: "是 / 對", en: "Yes" },
   { thai: "ไม่ใช่", zh: "不是", en: "No" },
-  { thai: "รัก", zh: "愛", en: "Love" },
-  { thai: "กินข้าว", zh: "吃飯", en: "Eat rice / Have a meal" },
-  { thai: "ห้องน้ำอยู่ที่ไหน", zh: "廁所在哪裡？", en: "Where is the bathroom?" },
-  { thai: "เท่าไหร่", zh: "多少錢？", en: "How much?" },
 ];
 
-function speak(fileName) {
-  const audio = new Audio(fileName);
-  audio.volume = 1.0;
-  audio.play();
+function speak(thaiText) {
+  // 先停掉正在念的
+  if (typeof responsiveVoice !== 'undefined') {
+    responsiveVoice.cancel();
+    // 用 Thai Female 來念，rate 0.9 會慢一點比較好學
+    responsiveVoice.speak(thaiText, "Thai Female", { rate: 0.9, pitch: 1, volume: 1 });
+    document.getElementById('status').innerText = "正在播放：" + thaiText;
+  } else {
+    alert("語音服務還沒載入好，請等 3 秒再按一次");
+  }
 }
 
 function render() {
@@ -59,8 +64,8 @@ function render() {
     div.className = 'card';
     div.innerHTML = `
       <div class="thai">${w.thai}</div>
-      <div class="trans"><span>中文：${w.zh}</span> | <span>English：${w.en}</span></div>
-      <button onclick="speak('sawadee.mp3')">🔊 播放發音</button>
+      <div class="trans">中文：${w.zh} | English：${w.en}</div>
+      <button onclick="speak('${w.thai}')">🔊 播放發音</button>
     `;
     list.appendChild(div);
   });
@@ -79,6 +84,13 @@ function addWord() {
 }
 
 render();
+
+// 等語音載好後，顯示已就緒
+setTimeout(() => {
+  if (typeof responsiveVoice !== 'undefined') {
+    document.getElementById('status').innerText = "語音已就緒，可以開始按 🔊 了";
+  }
+}, 2000);
 </script>
 </body>
 </html>
