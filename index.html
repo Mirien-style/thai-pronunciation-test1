@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>泰文發音學習</title>
-<!-- 關鍵：載入 ResponsiveVoice 的泰文語音 -->
 <script src="https://code.responsivevoice.org/responsivevoice.js?key=free"></script>
 <style>
   body { font-family: sans-serif; background: #fff7ed; padding: 20px; max-width: 800px; margin: auto; }
@@ -14,6 +13,7 @@
   .trans { font-size: 18px; color: #555; margin-top: 8px; }
   button { margin-top: 14px; font-size: 18px; padding: 10px 22px; border: none; border-radius: 999px; background: #ff8a00; color: white; cursor: pointer; }
   button:hover { background: #e67a00; }
+  #enableBtn { background: #22c55e; font-size: 20px; padding: 14px 28px; }
   .add-box { background: #fff; border: 2px dashed #ffb066; border-radius: 16px; padding: 20px; margin-top: 30px; text-align: center; }
   input { font-size: 18px; padding: 10px; margin: 5px; border-radius: 10px; border: 1px solid #ddd; width: 80%; max-width: 300px; }
   #status { text-align: center; color: #888; font-size: 14px; margin-top: 10px; }
@@ -22,7 +22,11 @@
 <body>
 
 <h1>🇹🇭 泰文發音學習</h1>
-<p style="text-align:center;">點 🔊 就會念泰文</p>
+<p style="text-align:center;">先點下面綠色按鈕啟用語音，之後按 🔊 就會馬上有聲音</p>
+
+<div style="text-align:center;">
+  <button id="enableBtn" onclick="enableVoice()">✅ 點我啟用語音</button>
+</div>
 <p id="status">正在載入語音服務...</p>
 
 <div id="list"></div>
@@ -44,15 +48,41 @@ const words = [
   { thai: "ไม่ใช่", zh: "不是", en: "No" },
 ];
 
+let voiceReady = false;
+
+function enableVoice() {
+  document.getElementById('status').innerText = "正在啟用語音，請稍等 2 秒...";
+  // 用一個很小聲、幾乎聽不到的聲音來預熱，騙過 Chrome 的封鎖
+  if (typeof responsiveVoice !== 'undefined') {
+    responsiveVoice.speak("สวัสดี", "Thai Female", {
+      rate: 0.9, volume: 0.01,
+      onend: function() {
+        voiceReady = true;
+        document.getElementById('status').innerText = "✅ 語音已就緒！現在按下面的 🔊 就有聲音了";
+        document.getElementById('enableBtn').innerText = "✅ 語音已啟用";
+      }
+    });
+    // 保底：如果 3 秒後還沒回來，也直接當作已就緒
+    setTimeout(() => {
+      if (!voiceReady) {
+        voiceReady = true;
+        document.getElementById('status').innerText = "✅ 語音已就緒！現在按下面的 🔊 試試看";
+      }
+    }, 3000);
+  } else {
+    document.getElementById('status').innerText = "語音服務還沒載入好，請重新整理一次再點啟用";
+  }
+}
+
 function speak(thaiText) {
-  // 先停掉正在念的
+  if (!voiceReady) {
+    alert("請先點上面綠色的「點我啟用語音」按鈕");
+    return;
+  }
   if (typeof responsiveVoice !== 'undefined') {
     responsiveVoice.cancel();
-    // 用 Thai Female 來念，rate 0.9 會慢一點比較好學
     responsiveVoice.speak(thaiText, "Thai Female", { rate: 0.9, pitch: 1, volume: 1 });
     document.getElementById('status').innerText = "正在播放：" + thaiText;
-  } else {
-    alert("語音服務還沒載入好，請等 3 秒再按一次");
   }
 }
 
@@ -84,13 +114,6 @@ function addWord() {
 }
 
 render();
-
-// 等語音載好後，顯示已就緒
-setTimeout(() => {
-  if (typeof responsiveVoice !== 'undefined') {
-    document.getElementById('status').innerText = "語音已就緒，可以開始按 🔊 了";
-  }
-}, 2000);
 </script>
 </body>
 </html>
