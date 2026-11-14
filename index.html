@@ -46,28 +46,20 @@ const words = [
 ];
 
 function speak(thaiText) {
-  // 先取消正在念的
   window.speechSynthesis.cancel();
 
-  const utterance = new SpeechSynthesisUtterance(thaiText);
-  utterance.lang = 'th-TH'; // 指定是泰文
-  utterance.rate = 0.85; // 念慢一點，比較好學
-  utterance.pitch = 1;
-
-  // 盡量找泰文的聲音
-  const voices = window.speechSynthesis.getVoices();
-  const thaiVoice = voices.find(v => v.lang.startsWith('th'));
-  if (thaiVoice) {
-    utterance.voice = thaiVoice;
-  }
-
-  window.speechSynthesis.speak(utterance);
+  // 改用這個 Google 發音網址，Chrome 比較不會擋
+  const url = `https://translate.googleapis.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(thaiText)}&tl=th&client=gtx`;
+  const audio = new Audio(url);
+  audio.play().catch(e => {
+    console.log("Google發音失敗，改用系統發音", e);
+    // 如果 Google 也失敗，才用系統的念
+    const u = new SpeechSynthesisUtterance(thaiText);
+    u.lang = 'th-TH';
+    u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+  });
 }
-
-// 讓瀏覽器先把泰文語音載進來
-window.speechSynthesis.onvoiceschanged = () => {
-  window.speechSynthesis.getVoices();
-};
 
 function render() {
   const list = document.getElementById('list');
