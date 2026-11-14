@@ -46,10 +46,28 @@ const words = [
 ];
 
 function speak(thaiText) {
-  const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(thaiText)}&tl=th&client=tw-ob`;
-  const audio = new Audio(url);
-  audio.play();
+  // 先取消正在念的
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(thaiText);
+  utterance.lang = 'th-TH'; // 指定是泰文
+  utterance.rate = 0.85; // 念慢一點，比較好學
+  utterance.pitch = 1;
+
+  // 盡量找泰文的聲音
+  const voices = window.speechSynthesis.getVoices();
+  const thaiVoice = voices.find(v => v.lang.startsWith('th'));
+  if (thaiVoice) {
+    utterance.voice = thaiVoice;
+  }
+
+  window.speechSynthesis.speak(utterance);
 }
+
+// 讓瀏覽器先把泰文語音載進來
+window.speechSynthesis.onvoiceschanged = () => {
+  window.speechSynthesis.getVoices();
+};
 
 function render() {
   const list = document.getElementById('list');
